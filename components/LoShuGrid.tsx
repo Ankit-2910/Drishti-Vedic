@@ -1,5 +1,7 @@
 'use client';
 
+import MissingNumberRemedies from '@/components/MissingNumberRemedies';
+
 interface LoShuGridProps {
   grid: number[][];
   missingNumbers: number[];
@@ -203,6 +205,9 @@ export default function LoShuGrid({ grid, missingNumbers, strengths, weaknesses 
           A complete arrow = inherited strength. A completely missing arrow = karmic blind-spot to consciously develop.
         </p>
       </div>
+
+      {/* Missing number remedies + mantra — always shown */}
+      <MissingNumberRemedies missingNumbers={missingNumbers} />
     </div>
   );
 }

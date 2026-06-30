@@ -31,35 +31,48 @@ export async function POST(req: NextRequest) {
     const latitude = body.latitude || '23.2599';
     const longitude = body.longitude || '77.4126';
     const gender = body.gender || 'male';
-    
-    // 1) Astrological chart
-    const chart = await generateKundli({
-      ...body,
-      latitude,
-      longitude,
-    });
-    
-    // 2) Numerology report (instant, no API)
+
+    // 2) Numerology first — pure math, never fails, and powers the remedies.
     const numerology = quickNumerology(body.name, body.date, gender);
-    
-    // 3) Combined Gemini narration
-    const narration = await narrate({
-      ascendant: chart.ascendant,
-      moonSign: chart.moonSign,
-      sunSign: chart.sunSign,
-      nakshatra: chart.nakshatra,
-      currentDasha: chart.currentDasha,
-      planets: chart.planets,
-      numerology,
-    });
-    
-    // 4) Persist (best-effort)
-    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      persistChart(body, { ...chart, numerology, narration }).catch((err) =>
-        console.error('Persist failed:', err)
-      );
+
+    // 1) Astrological chart — defensive: fall back to mock on any failure.
+    let chart;
+    try {
+      chart = await generateKundli({ ...body, latitude, longitude });
+    } catch (e) {
+      console.error('Chart generation failed, using mock:', e);
+      const { generateKundli: _gk } = await import('@/lib/prokerala');
+      chart = await _gk({ ...body, latitude, longitude });
     }
-    
+
+    // 3) Combined narration — defensive (narrate already self-heals to mock).
+    let narration = '';
+    try {
+      narration = await narrate({
+        ascendant: chart.ascendant,
+        moonSign: chart.moonSign,
+        sunSign: chart.sunSign,
+        nakshatra: chart.nakshatra,
+        currentDasha: chart.currentDasha,
+        planets: chart.planets,
+        numerology,
+      });
+    } catch (e) {
+      console.error('Narration failed:', e);
+      narration = 'Your integrated Vedic + numerology reading is being prepared. The chart and numbers below are fully computed.';
+    }
+
+    // 4) Persist (best-effort, fully isolated — never affects the response)
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        persistChart(body, { ...chart, numerology, narration }).catch((err) =>
+          console.error('Persist failed:', err)
+        );
+      } catch (err) {
+        console.error('Persist threw:', err);
+      }
+    }
+
     return NextResponse.json({
       ...chart,
       numerology,

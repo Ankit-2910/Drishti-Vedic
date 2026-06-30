@@ -611,3 +611,129 @@ export function detectRajYogas(ascendant: string, planets: Array<{ name: string;
 
   return { yogasFound, overallAssessment };
 }
+
+// ============================================================================
+// 7. MISSING NUMBER REMEDIES (Lo Shu) + associated Mantra
+//
+// For any number absent in the Lo Shu Grid, this returns the governing planet,
+// the life-area it rules, a practical remedy to strengthen it, and the beej
+// mantra to chant. Used across Lo Shu Grid, Numerology, and Name pages.
+// ============================================================================
+
+export interface MissingNumberRemedy {
+  number: number;
+  planet: string;
+  lifeArea: { en: string; hi: string };
+  remedy: { en: string; hi: string };
+  mantra: string;            // Devanagari
+  transliteration: string;
+  count: number;
+}
+
+const MISSING_REMEDY_DATA: Record<number, Omit<MissingNumberRemedy, 'number'>> = {
+  1: {
+    planet: 'Sun (Surya)',
+    lifeArea: { en: 'Career & Success', hi: 'कैरियर और सफलता' },
+    remedy: {
+      en: 'Offer water (arghya) to the Sun at sunrise daily. Respect your father and elders. Wear gold or copper.',
+      hi: 'रोज़ सूर्योदय पर सूर्य को जल (अर्घ्य) दें। पिता व बुज़ुर्गों का सम्मान करें। सोना या तांबा धारण करें।',
+    },
+    mantra: 'ॐ सूर्याय नमः',
+    transliteration: 'Om Suryaya Namah',
+    count: 108,
+  },
+  2: {
+    planet: 'Moon (Chandra)',
+    lifeArea: { en: 'Marriage & Relationships', hi: 'विवाह और संबंध' },
+    remedy: {
+      en: 'Offer water/milk at a Shiva temple on Mondays. Honour your mother. Keep silver with you.',
+      hi: 'सोमवार को शिव मंदिर में जल/दूध चढ़ाएँ। माता का सम्मान करें। चांदी अपने पास रखें।',
+    },
+    mantra: 'ॐ चन्द्राय नमः',
+    transliteration: 'Om Chandraya Namah',
+    count: 108,
+  },
+  3: {
+    planet: 'Jupiter (Guru)',
+    lifeArea: { en: 'Health & Family', hi: 'स्वास्थ्य और परिवार' },
+    remedy: {
+      en: 'Respect teachers and gurus. Wear yellow on Thursdays. Donate turmeric, gram dal, or yellow sweets.',
+      hi: 'गुरुजनों का सम्मान करें। गुरुवार को पीला पहनें। हल्दी, चने की दाल या पीली मिठाई दान करें।',
+    },
+    mantra: 'ॐ बृहस्पतये नमः',
+    transliteration: 'Om Brihaspataye Namah',
+    count: 108,
+  },
+  4: {
+    planet: 'Rahu',
+    lifeArea: { en: 'Wealth & Property', hi: 'धन और संपत्ति' },
+    remedy: {
+      en: 'Donate to the needy regularly. Keep your home clean and clutter-free. Feed birds.',
+      hi: 'ज़रूरतमंदों को नियमित दान दें। घर साफ़ और व्यवस्थित रखें। पक्षियों को दाना डालें।',
+    },
+    mantra: 'ॐ रांहवे नमः',
+    transliteration: 'Om Rahave Namah',
+    count: 108,
+  },
+  5: {
+    planet: 'Mercury (Budha)',
+    lifeArea: { en: 'Energy & Stability', hi: 'ऊर्जा और स्थिरता' },
+    remedy: {
+      en: 'Feed green fodder to cows. Donate whole green moong. Wear green on Wednesdays.',
+      hi: 'गाय को हरा चारा खिलाएँ। साबुत हरी मूंग दान करें। बुधवार को हरा पहनें।',
+    },
+    mantra: 'ॐ बुधाय नमः',
+    transliteration: 'Om Budhaya Namah',
+    count: 108,
+  },
+  6: {
+    planet: 'Venus (Shukra)',
+    lifeArea: { en: 'Friends & New Beginnings', hi: 'मित्र और नई शुरुआत' },
+    remedy: {
+      en: 'Keep your surroundings clean and beautiful. Donate white items (rice, sugar) on Fridays. Respect women.',
+      hi: 'आसपास स्वच्छ व सुंदर रखें। शुक्रवार को सफ़ेद वस्तुएँ (चावल, चीनी) दान करें। महिलाओं का सम्मान करें।',
+    },
+    mantra: 'ॐ शुक्राय नमः',
+    transliteration: 'Om Shukraya Namah',
+    count: 108,
+  },
+  7: {
+    planet: 'Ketu',
+    lifeArea: { en: 'Children & Creativity', hi: 'बच्चे और रचनात्मकता' },
+    remedy: {
+      en: 'Feed dogs regularly. Donate blankets to the poor. Practice meditation and spiritual study.',
+      hi: 'कुत्तों को नियमित भोजन दें। गरीबों को कंबल दान करें। ध्यान व आध्यात्मिक अध्ययन करें।',
+    },
+    mantra: 'ॐ केतवे नमः',
+    transliteration: 'Om Ketave Namah',
+    count: 108,
+  },
+  8: {
+    planet: 'Saturn (Shani)',
+    lifeArea: { en: 'Knowledge & Intuition', hi: 'ज्ञान और अंतर्ज्ञान' },
+    remedy: {
+      en: 'Serve the elderly and labourers. Donate mustard oil and black sesame on Saturdays. Recite Hanuman Chalisa.',
+      hi: 'बुज़ुर्गों व श्रमिकों की सेवा करें। शनिवार को सरसों तेल व काले तिल दान करें। हनुमान चालीसा पढ़ें।',
+    },
+    mantra: 'ॐ शनैश्चराय नमः',
+    transliteration: 'Om Shanaischaraya Namah',
+    count: 108,
+  },
+  9: {
+    planet: 'Mars (Mangal)',
+    lifeArea: { en: 'Reputation & Fame', hi: 'प्रतिष्ठा और प्रसिद्धि' },
+    remedy: {
+      en: 'Recite Hanuman Chalisa on Tuesdays. Donate red lentils (masoor) and jaggery. Maintain physical discipline.',
+      hi: 'मंगलवार को हनुमान चालीसा पढ़ें। मसूर दाल व गुड़ दान करें। शारीरिक अनुशासन रखें।',
+    },
+    mantra: 'ॐ अंगारकाय नमः',
+    transliteration: 'Om Angarakaya Namah',
+    count: 108,
+  },
+};
+
+export function getMissingNumberRemedies(missing: number[]): MissingNumberRemedy[] {
+  return missing
+    .filter((n) => n >= 1 && n <= 9)
+    .map((n) => ({ number: n, ...MISSING_REMEDY_DATA[n] }));
+}

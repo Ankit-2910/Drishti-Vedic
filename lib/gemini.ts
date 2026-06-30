@@ -41,30 +41,43 @@ export async function narrate(input: NarrationInput): Promise<string> {
 
   const userPrompt = buildUserPrompt(input);
 
-  const res = await fetch(
-    `${GEMINI_BASE}/models/${GEMINI_MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        generationConfig: {
-          temperature: 0.6,
-          maxOutputTokens: 1400,
-          thinkingConfig: { thinkingBudget: 0 },
-        },
-      }),
-    }
-  );
+  // Timeout guard: never let a slow/hanging Gemini call crash or stall the route.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
 
-  if (!res.ok) {
-    console.error('Gemini error:', res.status, await res.text());
+  try {
+    const res = await fetch(
+      `${GEMINI_BASE}/models/${GEMINI_MODEL}:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+          generationConfig: {
+            temperature: 0.6,
+            maxOutputTokens: 1400,
+            thinkingConfig: { thinkingBudget: 0 },
+          },
+        }),
+      }
+    );
+
+    if (!res.ok) {
+      console.error('Gemini error:', res.status);
+      return mockNarration(input);
+    }
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    return text || mockNarration(input);
+  } catch (e) {
+    // Network error, timeout/abort, malformed response — fall back gracefully.
+    console.error('Gemini call failed, using mock narration:', e instanceof Error ? e.message : e);
     return mockNarration(input);
+  } finally {
+    clearTimeout(timeout);
   }
-  const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  return text || mockNarration(input);
 }
 
 function buildUserPrompt(input: NarrationInput): string {

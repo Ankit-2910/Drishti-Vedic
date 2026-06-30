@@ -1,6 +1,7 @@
 'use client';
 
 import type { NumerologyReport } from '@/lib/numerology';
+import MissingNumberRemedies from '@/components/MissingNumberRemedies';
 
 export default function NumerologyCard({ report }: { report: NumerologyReport }) {
   return (
@@ -117,6 +118,9 @@ export default function NumerologyCard({ report }: { report: NumerologyReport })
           </div>
         </div>
       </div>
+
+      {/* Missing number remedies + mantra — always shown */}
+      <MissingNumberRemedies missingNumbers={report.loShuGrid.missingNumbers} />
     </div>
   );
 }

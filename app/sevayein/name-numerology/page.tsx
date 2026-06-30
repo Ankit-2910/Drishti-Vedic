@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import ServicePageWrapper from '@/components/ServicePageWrapper';
 import ShareButtons from '@/components/ShareButtons';
-import { calculateNaamank, calculateSoulNumber, calculatePersonalityNumber, calculateMulank } from '@/lib/numerology';
+import MissingNumberRemedies from '@/components/MissingNumberRemedies';
+import { calculateNaamank, calculateSoulNumber, calculatePersonalityNumber, calculateMulank, generateNumerologyReport } from '@/lib/numerology';
 import { useLang } from '@/lib/i18n';
 
 // Compatibility between Naamank and Mulank
@@ -113,6 +114,19 @@ export default function NameNumerologyPage() {
               )}
 
               <ShareButtons shareText={`Name numerology for ${name}: Naamank ${result.naamank} (DRISHTI Vedic+)`} />
+
+              {/* Missing number remedies + mantra (from birth Lo Shu grid) */}
+              {profile?.birthDate && (
+                <MissingNumberRemedies
+                  missingNumbers={
+                    generateNumerologyReport({
+                      fullName: profile.fullName || name,
+                      date: profile.birthDate,
+                      gender: profile.gender,
+                    }).loShuGrid.missingNumbers
+                  }
+                />
+              )}
             </>
           )}
         </div>

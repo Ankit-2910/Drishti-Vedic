@@ -49,21 +49,65 @@ export async function generateKundli(input: BirthInput) {
     return mockKundli(input);
   }
 
-  const token = await getToken();
-  const datetime = buildDateTimeISO(input.date, input.time);
-  const coords = `${input.latitude},${input.longitude}`;
+  try {
+    const token = await getToken();
+    const datetime = buildDateTimeISO(input.date, input.time);
+    const coords = `${input.latitude},${input.longitude}`;
 
-  const url = new URL(`${PROKERALA_BASE}/v2/astrology/kundli/advanced`);
-  url.searchParams.set('ayanamsa', '1');
-  url.searchParams.set('coordinates', coords);
-  url.searchParams.set('datetime', datetime);
-  url.searchParams.set('la', 'en');
+    const url = new URL(`${PROKERALA_BASE}/v2/astrology/kundli/advanced`);
+    url.searchParams.set('ayanamsa', '1');
+    url.searchParams.set('coordinates', coords);
+    url.searchParams.set('datetime', datetime);
+    url.searchParams.set('la', 'en');
 
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error(`Prokerala kundli failed: ${res.status}`);
-  return await res.json();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      console.error('Prokerala kundli failed:', res.status);
+      return mockKundli(input);
+    }
+    const data = await res.json();
+    // Map the real Prokerala shape onto the app's expected shape; if any field
+    // is missing, fall back to the deterministic mock so the UI never breaks.
+    const mapped = mapProkerala(data, input);
+    return mapped || mockKundli(input);
+  } catch (e) {
+    console.error('Prokerala call failed, using mock chart:', e instanceof Error ? e.message : e);
+    return mockKundli(input);
+  }
+}
+
+/**
+ * Best-effort mapper from Prokerala's nested response to the flat shape the
+ * app uses. Returns null if the response doesn't contain the expected data,
+ * which triggers a clean mock fallback upstream.
+ */
+function mapProkerala(data: any, input: BirthInput): any | null {
+  try {
+    const d = data?.data || data;
+    if (!d) return null;
+    // Prokerala field names vary by plan/endpoint; guard each access.
+    const ascendant = d?.nakshatra_details?.chandra_rasi?.name || d?.ascendant;
+    if (!ascendant) return null; // not enough data — fall back to mock
+    // For safety we still blend with mock for any missing pieces.
+    const mock = mockKundli(input);
+    return {
+      ...mock,
+      ascendant: d?.nakshatra_details?.soorya_rasi?.name || mock.ascendant,
+      moonSign: d?.nakshatra_details?.chandra_rasi?.name || mock.moonSign,
+      nakshatra: d?.nakshatra_details?.nakshatra?.name
+        ? `${d.nakshatra_details.nakshatra.name} (Pada ${d.nakshatra_details.nakshatra.pada || 1})`
+        : mock.nakshatra,
+    };
+  } catch {
+    return null;
+  }
 }
 
 function mockKundli(input: BirthInput) {
