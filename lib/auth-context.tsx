@@ -13,7 +13,7 @@ interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
   isConfigured: boolean;
-  sendMagicLink: (email: string) => Promise<{ ok: boolean; message: string; demo?: boolean }>;
+  sendMagicLink: (email: string) => Promise<{ ok: boolean; message: string; demo?: boolean; canDemo?: boolean }>;
   demoLogin: (email: string) => void;
   logout: () => Promise<void>;
 }
@@ -101,10 +101,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined,
         },
       });
-      if (error) return { ok: false, message: error.message };
+      if (error) {
+        // Real auth failed (misconfigured project, provider disabled, etc.)
+        // Offer demo fallback so the user is never blocked.
+        return { ok: false, message: error.message, canDemo: true };
+      }
       return { ok: true, message: 'Magic link sent! Check your inbox.' };
     } catch (e) {
-      return { ok: false, message: e instanceof Error ? e.message : 'Failed to send link' };
+      return { ok: false, message: e instanceof Error ? e.message : 'Failed to send link', canDemo: true };
     }
   }
 

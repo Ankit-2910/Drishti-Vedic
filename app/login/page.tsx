@@ -10,7 +10,7 @@ export default function LoginPage() {
   const { t, lang } = useLang();
   const router = useRouter();
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<{ type: 'idle' | 'sent' | 'error' | 'demo'; msg: string }>({ type: 'idle', msg: '' });
+  const [status, setStatus] = useState<{ type: 'idle' | 'sent' | 'error' | 'demo'; msg: string; canDemo?: boolean }>({ type: 'idle', msg: '' });
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -24,7 +24,7 @@ export default function LoginPage() {
     } else if (res.ok) {
       setStatus({ type: 'sent', msg: res.message });
     } else {
-      setStatus({ type: 'error', msg: res.message });
+      setStatus({ type: 'error', msg: res.message, canDemo: res.canDemo });
     }
   }
 
@@ -80,8 +80,20 @@ export default function LoginPage() {
           </div>
         )}
         {status.type === 'error' && (
-          <div className="mt-4 bg-crimson/10 border border-crimson/30 rounded-lg p-3 text-sm">
-            {status.msg}
+          <div className="mt-4 space-y-3">
+            <div className="bg-crimson/10 border border-crimson/30 rounded-lg p-3 text-sm">
+              <div className="font-medium mb-1">{lang === 'hi' ? 'ईमेल लॉगिन अभी उपलब्ध नहीं' : 'Email login not available yet'}</div>
+              <div className="text-text-muted text-xs">{status.msg}</div>
+            </div>
+            {status.canDemo && (
+              <button
+                type="button"
+                onClick={() => { demoLogin(email); }}
+                className="btn-primary w-full justify-center"
+              >
+                {lang === 'hi' ? 'अभी डेमो लॉगिन से आगे बढ़ें' : 'Continue with Demo Login'} →
+              </button>
+            )}
           </div>
         )}
         {status.type === 'demo' && (
@@ -99,6 +111,16 @@ export default function LoginPage() {
           </div>
         )}
       </form>
+
+      {/* Always-available demo access — smooth path for demos/exploring */}
+      <div className="text-center mt-4">
+        <button
+          onClick={() => demoLogin(email || 'guest@drishti.demo')}
+          className="text-text-muted hover:text-gold text-sm underline underline-offset-4"
+        >
+          {lang === 'hi' ? 'सिर्फ़ देख रहे हैं? डेमो एक्सेस से आगे बढ़ें →' : 'Just exploring? Use demo access →'}
+        </button>
+      </div>
 
       {!isConfigured && (
         <p className="text-text-faint text-xs text-center mt-4 font-mono">
