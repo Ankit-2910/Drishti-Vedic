@@ -61,7 +61,7 @@ export async function generateKundli(input: BirthInput) {
     url.searchParams.set('la', 'en');
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
+    const timeout = setTimeout(() => controller.abort(), 5000);
     const res = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },
       signal: controller.signal,

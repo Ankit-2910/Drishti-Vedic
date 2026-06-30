@@ -43,7 +43,7 @@ export async function narrate(input: NarrationInput): Promise<string> {
 
   // Timeout guard: never let a slow/hanging Gemini call crash or stall the route.
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const timeout = setTimeout(() => controller.abort(), 7000);
 
   try {
     const res = await fetch(
@@ -57,7 +57,7 @@ export async function narrate(input: NarrationInput): Promise<string> {
           contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
           generationConfig: {
             temperature: 0.6,
-            maxOutputTokens: 1400,
+            maxOutputTokens: 900,
             thinkingConfig: { thinkingBudget: 0 },
           },
         }),
